@@ -65,23 +65,13 @@ def ssq_interval_parity_data():
     return [list(items_sorted), list(percentages_sorted)], [list(second_items_sorted), list(second_percentages_sorted)]
 
 # 获取最新开奖结果
-def fetch_latest_result():
-    """获取最新开奖结果（含红球、蓝球、期号）"""
+def fetch_red_balls():
     url = "https://www.cwl.gov.cn/cwl_admin/front/cwlkj/search/kjxx/findDrawNotice?name=ssq&issueCount=&issueStart=&issueEnd=&dayStart=&dayEnd=&pageNo=1&pageSize=30&week=&systemType=PC"
-    try:
-        response = requests.get(url, timeout=10)
-        if response.status_code == 200:
-            data = response.json()
-            latest = data['result'][0]
-            return {
-                'red': [int(ball) for ball in latest['red'].split(',')],
-                'blue': latest['blue'],
-                'issue': latest['issue']
-            }
-        return None
-    except Exception as e:
-        print(f"获取开奖结果失败: {str(e)}")
-        return None
+    response = requests.get(url)
+    if response.status_code == 200:
+        data = response.json()
+        return [int(ball) for ball in data['result'][0]['red'].split(',')]
+    return None
 
 # 生成红球号码
 def generate_numbers(items_sorted, percentages_sorted, second_items_sorted, second_percentages_sorted):
@@ -207,18 +197,10 @@ if __name__ == "__main__":
     items_sorted, percentages_sorted = interval_data
     second_items_sorted, second_percentages_sorted = parity_data
     blue_proportion, interval_weights = ssq_blue_data()
+    period = fetch_red_balls()
     
-    # 获取最新开奖结果
-    latest_result = fetch_latest_result()  # 确保使用新函数名
-    
-    # 生成推送内容
-    content = "双色球预测结果：\n\n"
-    if latest_result:
-        content += f"最新开奖：\n🔴 红球：{sorted(latest_result['red'])}\n🔵 蓝球：{latest_result['blue']}\n期号：{latest_result['issue']}\n\n"
-    else:
-        content += "⚠️ 最新开奖数据获取失败\n\n"
-    
-    # 生成预测结果
+    # 生成结果
+    content = "本次预测结果：\n"
     count = 0
     while count < 10:
         try:
@@ -228,22 +210,16 @@ if __name__ == "__main__":
                 second_items_sorted, second_percentages_sorted
             )
             numbers_sorted = sorted(numbers)
-            if len(set(numbers_sorted) & set(latest_result['red'])) == 1:
-                line = f"第 {count+1} 组：\n红球：{numbers_sorted}\n蓝球：{back}\n"
-                line += f"总和：{total_sum} | 奇偶比：{odd_even_ratio}\n"
-                content += line + "\n"
+            if len(set(numbers_sorted) & set(period)) == 1 and \
+               (max(numbers_sorted) - min(numbers_sorted)) >= 20:
+                line = f"红球: {numbers_sorted} 蓝球: {back} 总和: {total_sum}\n"
+                content += line
                 count += 1
-        except Exception as e:
-            print(f"生成出错：{str(e)}")
-            continue
-    
-    content += "------\n预祝您中大奖！"
-    
-    # 发送推送
-    send_pushplus(content)
-    send_serverchan(content)
-    send_dingding(content)
-    send_feishu(content)
+        except:
+            pass
+
+    content += f"\n上期开奖号码：{period}\n"
+    content += "预祝您中大奖！"
 
     # 发送推送
     send_pushplus(content)
