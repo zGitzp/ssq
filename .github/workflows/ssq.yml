@@ -1,0 +1,29 @@
+name: SSQ Prediction
+
+on:
+  schedule:
+    - cron: '0 12 * * *'  # 每天UTC时间12点（北京时间20点）
+  workflow_dispatch:
+
+jobs:
+  predict:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.8'
+
+    - name: Install dependencies
+      run: pip install requests lxml
+
+    - name: Run Prediction
+      env:
+        PUSHPLUS_TOKEN: ${{ secrets.PUSHPLUS_TOKEN }}
+        SERVERCHAN_TOKEN: ${{ secrets.SERVERCHAN_TOKEN }}
+        DINGDING_WEBHOOK: ${{ secrets.DINGDING_WEBHOOK }}
+        FEISHU_WEBHOOK: ${{ secrets.FEISHU_WEBHOOK }}
+      run: python ssq.py
