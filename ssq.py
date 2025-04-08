@@ -197,10 +197,11 @@ if __name__ == "__main__":
     items_sorted, percentages_sorted = interval_data
     second_items_sorted, second_percentages_sorted = parity_data
     blue_proportion, interval_weights = ssq_blue_data()
-    period = fetch_red_balls()
     
-    # 生成结果
-    content = "本次预测结果：\n"
+    # 获取最新开奖结果
+    latest_result = fetch_latest_result()
+    
+    # 生成预测结果
     count = 0
     while count < 10:
         try:
@@ -210,16 +211,16 @@ if __name__ == "__main__":
                 second_items_sorted, second_percentages_sorted
             )
             numbers_sorted = sorted(numbers)
-            if len(set(numbers_sorted) & set(period)) == 1 and \
-               (max(numbers_sorted) - min(numbers_sorted)) >= 20:
-                line = f"红球: {numbers_sorted} 蓝球: {back} 总和: {total_sum}\n"
-                content += line
+            if len(set(numbers_sorted) & set(latest_result['red'])) == 1:
+                line = f"第 {count+1} 组：\n红球：{numbers_sorted}\n蓝球：{back}\n"
+                line += f"总和：{total_sum} | 奇偶比：{odd_even_ratio}\n"
+                content += line + "\n"
                 count += 1
-        except:
-            pass
-
-    content += f"\n上期开奖号码：{period}\n"
-    content += "预祝您中大奖！"
+        except Exception as e:
+            print(f"生成出错：{str(e)}")
+            continue
+    
+    content += "------\n预祝您中大奖！"
 
     # 发送推送
     send_pushplus(content)
